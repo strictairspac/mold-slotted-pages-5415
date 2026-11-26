@@ -37,4 +37,9 @@ def work():
 
 
 if __name__ == "__main__":
+    try:
+        from src.services.credentials import recover_interrupted
+        recover_interrupted("worker-recovery")
+    except Exception:
+        logger.exception("Startup credential recovery failed")
     work()

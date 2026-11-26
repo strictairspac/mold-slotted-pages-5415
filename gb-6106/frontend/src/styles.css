@@ -115,3 +115,5 @@ td a[aria-current=true] { font-weight: 750; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+.credential-archive { max-height: 18rem; overflow: auto; background: var(--surface); border: 1px solid var(--rule); padding: .75rem; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }

@@ -2,6 +2,7 @@ import json
 from sqlalchemy import func, select
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from migrations.v001_workbench import upgrade
 from src.config.resources import engine
@@ -16,6 +17,8 @@ from src.utils.passwords import hash_password
 def insert_new(db, table, key, values):
     if db.dialect.name == "postgresql":
         stmt = pg_insert(table).values(**values).on_conflict_do_nothing(index_elements=[key])
+    elif db.dialect.name == "sqlite":
+        stmt = sqlite_insert(table).values(**values).on_conflict_do_nothing(index_elements=[key])
     else:
         stmt = mysql_insert(table).values(**values).on_duplicate_key_update(**{key: table.c[key]})
     db.execute(stmt)

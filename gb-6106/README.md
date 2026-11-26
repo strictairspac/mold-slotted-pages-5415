@@ -41,6 +41,19 @@ docker compose up -d --build --wait
 
 选用「C4#03 · GM-C4-P07」对应的演示资料，保存一份复演资料，再以默认参数 192 提交。worker 保存结果摘要、业务明细和 SHA-256。复核员登录后在「追溯地址表」签署。
 
+## 凭据验单与修复
+
+质保发现完工凭据少行时，在「追溯地址表」执行验单和修复：
+
+- `POST /runs/{run_id}/verify`（也提供 `GET /runs/{run_id}/verification` 及 `/batches`、`/evidence`、`/trace`、`/credential(s)` 别名）重新计算保存结果的 SHA-256，并与批次完工指纹 `runs.digest` 核对。
+- `GET /runs/{run_id}/export` 及 `/download`、`/credential` 等下载别名在每次输出前强制验单。只有指纹不符的批次进入 `invalid` / 停发状态，其他批次仍照常下载。
+- 验坏时把当时的完整坏凭据、实际指纹和期望指纹写入 `credential_repairs` 留底；坏凭据不会被修复动作覆盖。
+- `POST /runs/{run_id}/repair`（也提供 `/verify-and-repair`、`/repairs` 和上述路径别名）锁定批次，读取原变更单 `cases.payload` 与原页容量 `runs.parameter` 确定性重放。只有重放摘要等于原完工指纹时才恢复 `runs.result` 并解除停发；指纹不符则继续停发。
+- 同一批次修复由批次行锁串行化，`(run_id, bad_digest)` 唯一约束为同一份坏凭据兜底，因此两人同时提交只会产生一条修复留底和一次成功重放；后到的请求等待后返回同一修复结果。
+- 验单状态和坏凭据先于重放持久化。进程中断后，启动恢复或 `POST /repairs/recover` 只会把未完成修复标记为 `interrupted` 并保持坏批次停发；之后重新修复/补回的凭据再次通过验单，下载才会恢复。也可用 `PUT/POST /runs/{run_id}/credential` 提交补回的 `result`，摘要不匹配时继续停发。
+
+操作员和复核员可提交修复，只读观察员不能修改。前端证据页提供「验单」「修复」按钮、停发状态和坏凭据留底查看。
+
 ## 开发说明
 
 | 部分 | 实现 |

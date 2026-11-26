@@ -57,4 +57,7 @@ def fail(job_failure):
 
 def finish(db, run_id, output):
     db.execute(update(runs).where(runs.c.id == run_id).values(**output, finished_at=int(time())))
+    if output.get("status") == JobState.DONE:
+        from src.services.credentials import mark_completed
+        mark_completed(db, run_id, output.get("digest"), output.get("result"))
     record(db, str(output["status"]), "worker", "run", run_id)

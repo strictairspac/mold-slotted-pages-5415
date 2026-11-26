@@ -18,3 +18,13 @@ class RunEntry(BaseModel):
     result: dict | None
     failure: str | None
     digest: str | None
+    verification_status: str | None = None
+    credential_status: str | None = None
+    integrity_status: str | None = None
+    quarantine_status: str | None = None
+    delivery_status: str | None = None
+    download_allowed: bool | None = None
+    blocked: bool | None = None
+    quarantined: bool | None = None
+    verified: bool | None = None
+    repair_count: int | None = None

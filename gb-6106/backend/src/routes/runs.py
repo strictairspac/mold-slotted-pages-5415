@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends
 
 from src.config.resources import engine
-from src.constants.job_state import JobState
 from src.controllers.access import identity, reviewer
 from src.controllers.workbench import new_review
+from src.routes.credentials import _export_response
 from src.schemas.reviews import ReviewEntry, ReviewInput
 from src.schemas.runs import RunEntry
 from src.services import reviews, runs
-from src.utils.serial import canonical_json
 
 router = APIRouter(prefix="/runs", tags=["Execution"])
 
@@ -37,12 +36,8 @@ def sign(run_id: int, form: ReviewInput, user=Depends(reviewer)):
 
 
 @router.get("/{run_id}/export", dependencies=[Depends(identity)])
-def export(run_id: int):
-    with engine.connect() as db:
-        run = runs.get(db, run_id)
-        if run["status"] != JobState.DONE:
-            raise HTTPException(409, "没有可导出的执行结果")
-        run["review"] = reviews.get(db, run_id)
-    return Response(canonical_json(run), media_type="application/json", headers={
-        "Content-Disposition": f"attachment; filename=evidence-{run_id}.json",
-    })
+def export(run_id: int, user=Depends(identity)):
+    # Verification is durable and runs before every download.  The helper
+    # returns a 409 JSON response for a quarantined batch or the canonical
+    # evidence bytes for a batch whose credential matches its finish digest.
+    return _export_response(run_id, user["username"])
